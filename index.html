@@ -1,0 +1,612 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Trade Chat</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Trade Chat">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#f7f8f9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111418" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAATSSURBVHhe7d0xqyNVGMfh/QYiK+yCoGAhWGyhWNiIgoVgoaBgsc2CYCcIVoKFdsKirQi2goW9YOEHsBA/hyD4ESLvhUA4OXuSyZmbJf88xQNbzDvn5t4fw2Qymb3zzN17bz979943kODOzT+eu7+BBIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJEh/0z7/8uvnn3/9O9udff9/so3z2+Rebjz5+uHn19Tf21jlVu965vfnWO3s/0yUT9IQffvzpJvDnX3hpb91jtfs8N0FfmNsMeteXX329efmVB3vrH9Lu59wEfWHOFfRWnZYsOWK38+cm6Atz7qDLb7//cfR5djt7boK+ME8j6K1jom5nzk3QF2YUdJ0etNu3Ksr6oz/65NObN4HtPg45Juol6mdu19iq19puf20E3Zk55N333h/ut3XKm8UnEfSYoDszx6ojd7vPnjVDE/SYoDszS9QVjXoT2O67Vder29lTCHpM0J2ZpY6Juj5xbOdOIegxQXdmTlFv/tr9t+rcu51bStBjgu7MnGoUW6mrJO3MUqM1BC3ove1n1KlHu0arnVlK0GOC7szM+Pbx93vr7Jr9IEPQY4LuzMyo8+R2nTXXFPSYoDszMw6ddtQRvJ1ZQtBjgu7MzKpLdO1aa0Un6DFBd2ZmjdacjU7QY4LuzMwarVna7ZcQ9JigOzOzRmuWdvslBD0m6M7MrNGapd1+CUGPCbozM2u0Zmm3X0LQY4LuzMwarTkbnaDHBN2ZmeWy3dMj6M7MrHadNdcU9JigOzMzDn2LZfZGf0GPCbozM6MeONOus2v2+4WCHhN0Z2ZGu8au+lZLu/1Sgh4TdGfmVHU60a6xqx6F0M4sJegxQXdmTnHoLruy5BFhTyLoMUF3Zk5x6CE0a60l6DFBd2aWOvQtlbLG0bkIekzQnZkljol5jW97bwl6TNCdmWPU5bfRvrdmv6HSEvSYoDszI/X8jWOOymWNxxa0BD0m6M7MVp331id/dTmuPjAZ3aPRqnXXOm/eJeixqw76tqx9mrFL0GOCXtnsvRqHCHpM0Cup8+XZ+zSOIegxQU+qkGefhrSEoMcEfYK6yajuyzjHEbkl6DFBD2z/F9k6CldI9QHJbVy5WELQY/FBc10ETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEET5eqCvv/ah5sXP/juatTrbX8Hya4u6PojP3i8uRr1etvfQTJBhxN0OEFnE3Q4QYcTdDZBhxN0OEFnu7qgXYfOdnVBk03QRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRPlf5rfm7+YQoSTAAAAAElFTkSuQmCC">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAYAAAA9zQYyAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAATSSURBVHhe7d0xqyNVGMfh/QYiK+yCoGAhWGyhWNiIgoVgoaBgsc2CYCcIVoKFdsKirQi2goW9YOEHsBA/hyD4ESLvhUA4OXuSyZmbJf88xQNbzDvn5t4fw2Qymb3zzN17bz979943kODOzT+eu7+BBIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJImiiCJoogiaKoIkiaKIImiiCJoqgiSJoogiaKIImiqCJEh/0z7/8uvnn3/9O9udff9/so3z2+Rebjz5+uHn19Tf21jlVu965vfnWO3s/0yUT9IQffvzpJvDnX3hpb91jtfs8N0FfmNsMeteXX329efmVB3vrH9Lu59wEfWHOFfRWnZYsOWK38+cm6Atz7qDLb7//cfR5djt7boK+ME8j6K1jom5nzk3QF2YUdJ0etNu3Ksr6oz/65NObN4HtPg45Juol6mdu19iq19puf20E3Zk55N333h/ut3XKm8UnEfSYoDszx6ojd7vPnjVDE/SYoDszS9QVjXoT2O67Vder29lTCHpM0J2ZpY6Juj5xbOdOIegxQXdmTlFv/tr9t+rcu51bStBjgu7MnGoUW6mrJO3MUqM1BC3ove1n1KlHu0arnVlK0GOC7szM+Pbx93vr7Jr9IEPQY4LuzMyo8+R2nTXXFPSYoDszMw6ddtQRvJ1ZQtBjgu7MzKpLdO1aa0Un6DFBd2ZmjdacjU7QY4LuzMwarVna7ZcQ9JigOzOzRmuWdvslBD0m6M7MrNGapd1+CUGPCbozM2u0Zmm3X0LQY4LuzMwarTkbnaDHBN2ZmeWy3dMj6M7MrHadNdcU9JigOzMzDn2LZfZGf0GPCbozM6MeONOus2v2+4WCHhN0Z2ZGu8au+lZLu/1Sgh4TdGfmVHU60a6xqx6F0M4sJegxQXdmTnHoLruy5BFhTyLoMUF3Zk5x6CE0a60l6DFBd2aWOvQtlbLG0bkIekzQnZkljol5jW97bwl6TNCdmWPU5bfRvrdmv6HSEvSYoDszI/X8jWOOymWNxxa0BD0m6M7MVp331id/dTmuPjAZ3aPRqnXXOm/eJeixqw76tqx9mrFL0GOCXtnsvRqHCHpM0Cup8+XZ+zSOIegxQU+qkGefhrSEoMcEfYK6yajuyzjHEbkl6DFBD2z/F9k6CldI9QHJbVy5WELQY/FBc10ETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEET5eqCvv/ah5sXP/juatTrbX8Hya4u6PojP3i8uRr1etvfQTJBhxN0OEFnE3Q4QYcTdDZBhxN0OEFnu7qgXYfOdnVBk03QRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRNF0EQRNFEETRRBE0XQRBE0UQRNFEETRdBEETRRBE0UQRPlf5rfm7+YQoSTAAAAAElFTkSuQmCC">
+
+<style>
+  :root {
+    --bg: #f7f8f9;
+    --surface: #ffffff;
+    --border: #e2e5e9;
+    --text: #16191d;
+    --muted: #6b7280;
+    --accent: #1f6feb;
+    --accent-text: #ffffff;
+    --bubble-me: #1f6feb;
+    --bubble-me-text: #ffffff;
+    --bubble-them: #ffffff;
+    --danger: #b42318;
+    --danger-bg: #fff4f2;
+    --danger-border: #f4c9c2;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111418;
+      --surface: #181c21;
+      --border: #262c33;
+      --text: #e9ecef;
+      --muted: #949ca6;
+      --accent: #2d8aff;
+      --accent-text: #ffffff;
+      --bubble-me: #2d8aff;
+      --bubble-me-text: #ffffff;
+      --bubble-them: #1e232a;
+      --danger: #ff9c8f;
+      --danger-bg: #2a1a19;
+      --danger-border: #4a2a27;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top));
+    padding-left: calc(14px + env(safe-area-inset-left));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    flex: 1;
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header .sub {
+    display: block;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  #resetBtn {
+    flex: none;
+    font: inherit;
+    font-size: 13px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  #resetBtn:active { background: var(--bg); }
+
+  #list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 14px 4px;
+    padding-left: calc(14px + env(safe-area-inset-left));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .row { display: flex; }
+  .row.me { justify-content: flex-end; }
+  .row.them { justify-content: flex-start; }
+
+  .bubble {
+    max-width: 82%;
+    padding: 9px 13px;
+    border-radius: var(--radius);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .row.me .bubble {
+    background: var(--bubble-me);
+    color: var(--bubble-me-text);
+    border-bottom-right-radius: 4px;
+  }
+  .row.them .bubble {
+    background: var(--bubble-them);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+
+  .row.error .bubble {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger-border);
+    color: var(--danger);
+    font-size: 14px;
+    border-bottom-left-radius: 4px;
+  }
+  .retry {
+    display: block;
+    margin-top: 8px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--danger);
+    background: transparent;
+    border: 1px solid var(--danger-border);
+    border-radius: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+
+  .typing .bubble {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 14px;
+  }
+  .typing i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+    animation: blink 1.2s infinite ease-in-out;
+  }
+  .typing i:nth-child(2) { animation-delay: 0.18s; }
+  .typing i:nth-child(3) { animation-delay: 0.36s; }
+  @keyframes blink {
+    0%, 60%, 100% { opacity: 0.25; }
+    30% { opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .typing i { animation: none; opacity: 0.5; }
+  }
+
+  #empty {
+    margin: auto;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    padding: 24px;
+  }
+  #empty strong {
+    display: block;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  form {
+    flex: none;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    padding: 10px 14px;
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    padding-left: calc(14px + env(safe-area-inset-left));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  #input {
+    flex: 1;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    resize: none;
+    max-height: 140px;
+    overflow-y: auto;
+    line-height: 1.4;
+  }
+  #input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  #send {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: 10px;
+    background: var(--accent);
+    color: var(--accent-text);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  #send:disabled { opacity: 0.4; cursor: default; }
+  #send svg { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>Trade Chat<span class="sub" id="sessionLabel"></span></h1>
+    <button type="button" id="resetBtn">New chat</button>
+  </header>
+
+  <div id="list" aria-live="polite">
+    <div id="empty">
+      <strong>Start a conversation</strong>
+      Messages are sent to your n8n workflow and answered there.
+    </div>
+  </div>
+
+  <form id="composer" autocomplete="off">
+    <textarea id="input" rows="1" placeholder="Message" enterkeyhint="send"></textarea>
+    <button type="submit" id="send" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 12h15M13 6l6 6-6 6"></path>
+      </svg>
+    </button>
+  </form>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var ENDPOINT = 'https://nikolakuze.app.n8n.cloud/webhook/dtjournal-chat';
+  var SESSION_KEY = 'dtchat.sessionId';
+  var LOG_KEY = 'dtchat.log';
+  var TIMEOUT_MS = 90000;
+  var ICON512 = 'data:image/png;base64,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';
+
+  var list = document.getElementById('list');
+  var empty = document.getElementById('empty');
+  var form = document.getElementById('composer');
+  var input = document.getElementById('input');
+  var sendBtn = document.getElementById('send');
+  var resetBtn = document.getElementById('resetBtn');
+  var sessionLabel = document.getElementById('sessionLabel');
+
+  var busy = false;
+  var typingRow = null;
+
+  /* ---------- storage (a blocked localStorage must not break the app) ---------- */
+
+  function get(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
+  }
+  function set(key, value) {
+    try { localStorage.setItem(key, value); } catch (e) { /* private mode */ }
+  }
+  function del(key) {
+    try { localStorage.removeItem(key); } catch (e) {}
+  }
+
+  function makeId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    if (window.crypto && crypto.getRandomValues) {
+      var a = new Uint8Array(16);
+      crypto.getRandomValues(a);
+      return Array.prototype.map.call(a, function (b) {
+        return ('0' + b.toString(16)).slice(-2);
+      }).join('');
+    }
+    return 'x' + Date.now().toString(16) + Math.random().toString(16).slice(2, 10);
+  }
+
+  var sessionId = get(SESSION_KEY);
+  if (!sessionId) {
+    sessionId = makeId();
+    set(SESSION_KEY, sessionId);
+  }
+  function showSession() {
+    sessionLabel.textContent = 'session ' + String(sessionId).slice(0, 8);
+  }
+  showSession();
+
+  /* ---------- transcript ---------- */
+
+  function loadLog() {
+    try {
+      var raw = get(LOG_KEY);
+      var parsed = raw ? JSON.parse(raw) : [];
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+  var log = loadLog();
+
+  function saveLog() {
+    log = log.slice(-200);
+    set(LOG_KEY, JSON.stringify(log));
+  }
+
+  function atBottom() {
+    return list.scrollHeight - list.scrollTop - list.clientHeight < 80;
+  }
+  function scrollToEnd() {
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function dropEmpty() {
+    if (empty && empty.parentNode) empty.parentNode.removeChild(empty);
+  }
+
+  function addBubble(role, text) {
+    dropEmpty();
+    var row = document.createElement('div');
+    row.className = 'row ' + (role === 'user' ? 'me' : 'them');
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    row.appendChild(bubble);
+    list.appendChild(row);
+    scrollToEnd();
+    return row;
+  }
+
+  function addError(message, retryText) {
+    dropEmpty();
+    var row = document.createElement('div');
+    row.className = 'row them error';
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = message;
+    if (retryText) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'retry';
+      btn.textContent = 'Retry';
+      btn.addEventListener('click', function () {
+        if (busy) return;
+        row.parentNode.removeChild(row);
+        send(retryText, true);
+      });
+      bubble.appendChild(btn);
+    }
+    row.appendChild(bubble);
+    list.appendChild(row);
+    scrollToEnd();
+  }
+
+  function showTyping() {
+    dropEmpty();
+    var row = document.createElement('div');
+    row.className = 'row them typing';
+    var bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.appendChild(document.createElement('i'));
+    bubble.appendChild(document.createElement('i'));
+    bubble.appendChild(document.createElement('i'));
+    row.appendChild(bubble);
+    list.appendChild(row);
+    scrollToEnd();
+    typingRow = row;
+  }
+  function hideTyping() {
+    if (typingRow && typingRow.parentNode) typingRow.parentNode.removeChild(typingRow);
+    typingRow = null;
+  }
+
+  for (var i = 0; i < log.length; i++) addBubble(log[i].role, log[i].text);
+  scrollToEnd();
+
+  /* ---------- network ---------- */
+
+  // The workflow is expected to answer { reply, sessionId }. n8n can just as
+  // easily be wired to return a bare array or a differently named text field,
+  // so pull the reply out of the likely shapes rather than render an empty
+  // bubble when it does.
+  function pickReply(data) {
+    if (data == null) return '';
+    if (typeof data === 'string') return data;
+    if (Array.isArray(data)) return data.length ? pickReply(data[0]) : '';
+    var keys = ['reply', 'output', 'text', 'message', 'answer', 'response'];
+    for (var k = 0; k < keys.length; k++) {
+      var v = data[keys[k]];
+      if (typeof v === 'string' && v.trim()) return v;
+    }
+    if (data.json) return pickReply(data.json);
+    return '';
+  }
+
+  function pickSessionId(data) {
+    if (!data || typeof data !== 'object') return null;
+    if (Array.isArray(data)) return data.length ? pickSessionId(data[0]) : null;
+    if (typeof data.sessionId === 'string' && data.sessionId) return data.sessionId;
+    if (data.json) return pickSessionId(data.json);
+    return null;
+  }
+
+  function setBusy(state) {
+    busy = state;
+    sendBtn.disabled = state;
+  }
+
+  function send(text, isRetry) {
+    if (busy) return;
+    if (!isRetry) {
+      log.push({ role: 'user', text: text });
+      saveLog();
+      addBubble('user', text);
+    }
+
+    setBusy(true);
+    showTyping();
+
+    var controller = ('AbortController' in window) ? new AbortController() : null;
+    var timedOut = false;
+    var timer = setTimeout(function () {
+      timedOut = true;
+      if (controller) controller.abort();
+    }, TIMEOUT_MS);
+
+    fetch(ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, sessionId: sessionId }),
+      signal: controller ? controller.signal : undefined
+    }).then(function (res) {
+      return res.text().then(function (body) {
+        if (!res.ok) {
+          throw new Error('The workflow returned ' + res.status + (body ? ': ' + body.slice(0, 200) : '') + '.');
+        }
+        try {
+          return body ? JSON.parse(body) : null;
+        } catch (e) {
+          return body;
+        }
+      });
+    }).then(function (data) {
+      clearTimeout(timer);
+      hideTyping();
+      setBusy(false);
+
+      var returned = pickSessionId(data);
+      if (returned && returned !== sessionId) {
+        sessionId = returned;
+        set(SESSION_KEY, sessionId);
+        showSession();
+      }
+
+      var reply = pickReply(data);
+      if (!reply.trim()) {
+        addError('The workflow answered, but with no text in it.', text);
+        return;
+      }
+      log.push({ role: 'assistant', text: reply });
+      saveLog();
+      addBubble('assistant', reply);
+    }).catch(function (err) {
+      clearTimeout(timer);
+      hideTyping();
+      setBusy(false);
+
+      var message;
+      if (timedOut || (err && err.name === 'AbortError')) {
+        message = 'No answer within 90 seconds, so the request was given up on.';
+      } else if (navigator.onLine === false) {
+        message = 'You are offline. Reconnect and try again.';
+      } else {
+        message = (err && err.message) ? err.message : 'Something went wrong.';
+        if (/failed to fetch|networkerror|load failed/i.test(message)) {
+          message = 'Could not reach the workflow. Check your connection, and that the webhook is active.';
+        }
+      }
+      addError(message, text);
+    });
+  }
+
+  /* ---------- composer ---------- */
+
+  // scrollHeight measures the content box; the element is border-box, so the
+  // two 1px borders have to be added back or the field sits 2px short and
+  // shows a scrollbar with nothing to scroll.
+  function autoGrow() {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight + 2, 140) + 'px';
+  }
+  input.addEventListener('input', autoGrow);
+
+  function submit() {
+    var text = input.value.trim();
+    if (!text || busy) return;
+    input.value = '';
+    autoGrow();
+    send(text, false);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    submit();
+  });
+
+  // On a phone, Enter inserts a newline and the button sends. With a physical
+  // keyboard, Enter sends and Shift+Enter inserts a newline.
+  var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey && !coarse) {
+      e.preventDefault();
+      submit();
+    }
+  });
+
+  resetBtn.addEventListener('click', function () {
+    if (log.length && !confirm('Start a new conversation? This clears the current one.')) return;
+    log = [];
+    del(LOG_KEY);
+    sessionId = makeId();
+    set(SESSION_KEY, sessionId);
+    showSession();
+    while (list.firstChild) list.removeChild(list.firstChild);
+    list.appendChild(empty);
+    input.focus();
+  });
+
+  // Keep the composer above the on-screen keyboard on browsers that shrink the
+  // visual viewport instead of the layout viewport (iOS Safari).
+  if (window.visualViewport) {
+    var app = document.getElementById('app');
+    var vv = window.visualViewport;
+    var syncViewport = function () {
+      var stuck = atBottom();
+      app.style.height = vv.height + 'px';
+      if (stuck) scrollToEnd();
+    };
+    vv.addEventListener('resize', syncViewport);
+    vv.addEventListener('scroll', syncViewport);
+  }
+
+  /* ---------- installable without a separate manifest file ---------- */
+
+  try {
+    var base = location.href.split('#')[0].split('?')[0];
+    var manifest = {
+      name: 'Trade Chat',
+      short_name: 'Trade Chat',
+      start_url: base,
+      scope: base.replace(/[^/]*$/, ''),
+      display: 'standalone',
+      background_color: '#111418',
+      theme_color: '#111418',
+      icons: [
+        { src: ICON512, sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: ICON512, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+      ]
+    };
+    var link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = 'data:application/manifest+json;base64,' +
+      btoa(unescape(encodeURIComponent(JSON.stringify(manifest))));
+    document.head.appendChild(link);
+  } catch (e) { /* not installable from here; the page still works */ }
+
+  autoGrow();
+})();
+</script>
+</body>
+</html>
