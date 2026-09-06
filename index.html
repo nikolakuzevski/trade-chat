@@ -246,6 +246,101 @@
   }
   #send:disabled { opacity: 0.4; cursor: default; }
   #send svg { width: 20px; height: 20px; }
+
+  #attachBtn {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+  #attachBtn:active { background: var(--bg); }
+  #attachBtn svg { width: 20px; height: 20px; }
+  #fileInput { display: none; }
+
+  #attachments {
+    flex: none;
+    display: flex;
+    gap: 8px;
+    padding: 10px 14px 0;
+    padding-left: calc(14px + env(safe-area-inset-left));
+    padding-right: calc(14px + env(safe-area-inset-right));
+    overflow-x: auto;
+    background: var(--surface);
+  }
+  #attachments[hidden] { display: none; }
+  .attach-thumb {
+    position: relative;
+    flex: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .attach-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .attach-thumb button {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    width: 18px;
+    height: 18px;
+    border: none;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 12px;
+    line-height: 1;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .bubble-images {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .bubble-images:not(:first-child) { margin-top: 8px; }
+  .bubble-text { margin-top: 8px; }
+  .bubble-images img {
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    cursor: zoom-in;
+    display: block;
+  }
+
+  #lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    padding: calc(24px + env(safe-area-inset-top)) calc(24px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(24px + env(safe-area-inset-left));
+    cursor: zoom-out;
+    z-index: 10;
+  }
+  #lightbox[hidden] { display: none; }
+  #lightbox img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 8px;
+    object-fit: contain;
+  }
 </style>
 </head>
 <body>
@@ -262,7 +357,15 @@
     </div>
   </div>
 
+  <div id="attachments" hidden></div>
+
   <form id="composer" autocomplete="off">
+    <input type="file" id="fileInput" accept="image/*" multiple>
+    <button type="button" id="attachBtn" aria-label="Attach images">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"></path>
+      </svg>
+    </button>
     <textarea id="input" rows="1" placeholder="Message" enterkeyhint="send"></textarea>
     <button type="submit" id="send" aria-label="Send">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -270,6 +373,10 @@
       </svg>
     </button>
   </form>
+</div>
+
+<div id="lightbox" hidden>
+  <img id="lightboxImg" alt="">
 </div>
 
 <script>
@@ -280,6 +387,10 @@
   var SESSION_KEY = 'dtchat.sessionId';
   var LOG_KEY = 'dtchat.log';
   var TIMEOUT_MS = 90000;
+  var MAX_ATTACHMENTS = 6;
+  var MAX_SOURCE_BYTES = 25 * 1024 * 1024; // guards against hanging on a huge photo before it's even resized
+  var ATTACH_MAX_DIM = 1440; // long edge, in px - enough to keep chart labels/text legible
+  var ATTACH_QUALITY = 0.82; // JPEG quality
   var ICON512 = 'data:image/png;base64,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';
 
   var list = document.getElementById('list');
@@ -289,9 +400,15 @@
   var sendBtn = document.getElementById('send');
   var resetBtn = document.getElementById('resetBtn');
   var sessionLabel = document.getElementById('sessionLabel');
+  var attachBtn = document.getElementById('attachBtn');
+  var fileInput = document.getElementById('fileInput');
+  var attachmentsBar = document.getElementById('attachments');
+  var lightbox = document.getElementById('lightbox');
+  var lightboxImg = document.getElementById('lightboxImg');
 
   var busy = false;
   var typingRow = null;
+  var pendingAttachments = []; // [{ id, name, mimeType, dataUrl }], images picked or pasted but not sent yet
 
   /* ---------- storage (a blocked localStorage must not break the app) ---------- */
 
@@ -342,7 +459,19 @@
 
   function saveLog() {
     log = log.slice(-200);
-    set(LOG_KEY, JSON.stringify(log));
+    // Attached images push the log a lot closer to localStorage's quota than
+    // plain text ever did. Rather than silently lose the whole transcript (or
+    // silently write nothing, per the try/catch in `set`), drop the oldest
+    // messages one at a time until what's left actually fits.
+    while (log.length) {
+      try {
+        localStorage.setItem(LOG_KEY, JSON.stringify(log));
+        return;
+      } catch (e) {
+        log.shift();
+      }
+    }
+    del(LOG_KEY);
   }
 
   function atBottom() {
@@ -356,27 +485,59 @@
     if (empty && empty.parentNode) empty.parentNode.removeChild(empty);
   }
 
-  function addBubble(role, text) {
+  function openLightbox(src) {
+    lightboxImg.src = src;
+    lightbox.hidden = false;
+  }
+  function closeLightbox() {
+    lightbox.hidden = true;
+    lightboxImg.src = '';
+  }
+  lightbox.addEventListener('click', closeLightbox);
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
+  });
+
+  function addBubble(role, text, images) {
     dropEmpty();
     var row = document.createElement('div');
     row.className = 'row ' + (role === 'user' ? 'me' : 'them');
     var bubble = document.createElement('div');
     bubble.className = 'bubble';
-    bubble.textContent = text;
+    if (images && images.length) {
+      var grid = document.createElement('div');
+      grid.className = 'bubble-images';
+      images.forEach(function (src) {
+        var img = document.createElement('img');
+        img.src = src;
+        img.alt = 'Attached image';
+        img.addEventListener('click', function () { openLightbox(src); });
+        grid.appendChild(img);
+      });
+      bubble.appendChild(grid);
+    }
+    if (text) {
+      var textNode = document.createElement('div');
+      if (images && images.length) textNode.className = 'bubble-text';
+      textNode.textContent = text;
+      bubble.appendChild(textNode);
+    }
     row.appendChild(bubble);
     list.appendChild(row);
     scrollToEnd();
     return row;
   }
 
-  function addError(message, retryText) {
+  function addError(message, retryText, retryImages) {
     dropEmpty();
     var row = document.createElement('div');
     row.className = 'row them error';
     var bubble = document.createElement('div');
     bubble.className = 'bubble';
     bubble.textContent = message;
-    if (retryText) {
+    // An images-only message has an empty retryText, so a plain truthiness
+    // check on retryText alone would silently drop the Retry button for it.
+    if (retryText || (retryImages && retryImages.length)) {
       var btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'retry';
@@ -384,7 +545,7 @@
       btn.addEventListener('click', function () {
         if (busy) return;
         row.parentNode.removeChild(row);
-        send(retryText, true);
+        send(retryText, retryImages, true);
       });
       bubble.appendChild(btn);
     }
@@ -412,8 +573,148 @@
     typingRow = null;
   }
 
-  for (var i = 0; i < log.length; i++) addBubble(log[i].role, log[i].text);
+  for (var i = 0; i < log.length; i++) addBubble(log[i].role, log[i].text, log[i].images);
   scrollToEnd();
+
+  /* ---------- attachments (file picker, paste, drag-and-drop) ---------- */
+
+  // Every attached image is downscaled and re-encoded as JPEG through a
+  // canvas before it ever touches localStorage or the network: a raw phone
+  // photo can be 10+ MB, which is both slow to POST and enough on its own to
+  // blow past localStorage's quota after a handful of messages. The same
+  // processed copy is used for the on-screen thumbnail, the persisted
+  // transcript and the payload sent to the workflow, so what you see is
+  // exactly what gets sent.
+  function loadImageEl(url) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('Could not read that image.')); };
+      img.src = url;
+    });
+  }
+
+  function processImageFile(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error('Could not read "' + file.name + '".')); };
+      reader.onload = function () {
+        loadImageEl(reader.result).then(function (img) {
+          var scale = Math.min(1, ATTACH_MAX_DIM / Math.max(img.naturalWidth, img.naturalHeight));
+          var w = Math.max(1, Math.round(img.naturalWidth * scale));
+          var h = Math.max(1, Math.round(img.naturalHeight * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          // Flatten onto white first - JPEG has no alpha channel, so a
+          // transparent PNG/screenshot would otherwise composite to black.
+          ctx.fillStyle = '#fff';
+          ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve({
+            id: makeId(),
+            name: file.name || 'image.jpg',
+            mimeType: 'image/jpeg',
+            dataUrl: canvas.toDataURL('image/jpeg', ATTACH_QUALITY)
+          });
+        }).catch(reject);
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderAttachments() {
+    attachmentsBar.textContent = '';
+    attachmentsBar.hidden = pendingAttachments.length === 0;
+    pendingAttachments.forEach(function (a) {
+      var thumb = document.createElement('div');
+      thumb.className = 'attach-thumb';
+      var img = document.createElement('img');
+      img.src = a.dataUrl;
+      img.alt = a.name;
+      var remove = document.createElement('button');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', 'Remove ' + a.name);
+      remove.textContent = '×';
+      remove.addEventListener('click', function () {
+        pendingAttachments = pendingAttachments.filter(function (x) { return x.id !== a.id; });
+        renderAttachments();
+      });
+      thumb.appendChild(img);
+      thumb.appendChild(remove);
+      attachmentsBar.appendChild(thumb);
+    });
+  }
+
+  function attachFiles(fileList) {
+    var files = Array.prototype.filter.call(fileList, function (f) {
+      return f.type && f.type.indexOf('image/') === 0;
+    });
+    if (!files.length) {
+      if (fileList.length) addError('Only images can be attached.', null);
+      return;
+    }
+    var room = MAX_ATTACHMENTS - pendingAttachments.length;
+    if (room <= 0) {
+      addError('You can attach up to ' + MAX_ATTACHMENTS + ' images per message.', null);
+      return;
+    }
+    if (files.length > room) {
+      addError('Only ' + room + ' more image' + (room === 1 ? '' : 's') + ' can be attached to this message.', null);
+      files = files.slice(0, room);
+    }
+    files = files.filter(function (f) {
+      if (f.size > MAX_SOURCE_BYTES) {
+        addError('"' + f.name + '" is too large to attach (over 25 MB).', null);
+        return false;
+      }
+      return true;
+    });
+    Promise.all(files.map(processImageFile)).then(function (results) {
+      pendingAttachments = pendingAttachments.concat(results);
+      renderAttachments();
+    }).catch(function (err) {
+      addError((err && err.message) || 'Could not process that image.', null);
+    });
+  }
+
+  attachBtn.addEventListener('click', function () { fileInput.click(); });
+  fileInput.addEventListener('change', function () {
+    attachFiles(fileInput.files);
+    fileInput.value = ''; // so picking the same file twice in a row still fires "change"
+  });
+
+  // A screenshot copied to the clipboard (Win+Shift+S, cmd+ctrl+shift+4, or
+  // "Copy image" from a browser) shows up as a File on the paste event -
+  // there's no separate "paste an image" control, it just works in the
+  // message field.
+  input.addEventListener('paste', function (e) {
+    var items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    var files = [];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].kind === 'file' && items[i].type.indexOf('image/') === 0) {
+        var f = items[i].getAsFile();
+        if (f) files.push(f);
+      }
+    }
+    if (files.length) {
+      e.preventDefault(); // otherwise some browsers also paste a filename as text
+      attachFiles(files);
+    }
+  });
+
+  // Desktop-only nicety: dropping an image file straight onto the app,
+  // instead of the browser navigating to it as a bare image page.
+  var appEl = document.getElementById('app');
+  appEl.addEventListener('dragover', function (e) { e.preventDefault(); });
+  appEl.addEventListener('drop', function (e) {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+      attachFiles(e.dataTransfer.files);
+    }
+  });
 
   /* ---------- network ---------- */
 
@@ -447,12 +748,17 @@
     sendBtn.disabled = state;
   }
 
-  function send(text, isRetry) {
+  function send(text, images, isRetry) {
     if (busy) return;
+    images = images || [];
+
     if (!isRetry) {
-      log.push({ role: 'user', text: text });
+      var thumbs = images.map(function (a) { return a.dataUrl; });
+      var entry = { role: 'user', text: text };
+      if (thumbs.length) entry.images = thumbs;
+      log.push(entry);
       saveLog();
-      addBubble('user', text);
+      addBubble('user', text, thumbs);
     }
 
     setBusy(true);
@@ -465,10 +771,21 @@
       if (controller) controller.abort();
     }, TIMEOUT_MS);
 
+    var payload = { message: text, sessionId: sessionId };
+    if (images.length) {
+      // Sent as base64 rather than multipart so the whole request stays one
+      // plain JSON body - simplest thing for an n8n webhook to parse. The
+      // workflow needs to be told what to look for on its side: see the
+      // README for the exact shape.
+      payload.images = images.map(function (a) {
+        return { name: a.name, type: a.mimeType, data: a.dataUrl.split(',')[1] };
+      });
+    }
+
     fetch(ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, sessionId: sessionId }),
+      body: JSON.stringify(payload),
       signal: controller ? controller.signal : undefined
     }).then(function (res) {
       return res.text().then(function (body) {
@@ -495,7 +812,7 @@
 
       var reply = pickReply(data);
       if (!reply.trim()) {
-        addError('The workflow answered, but with no text in it.', text);
+        addError('The workflow answered, but with no text in it.', text, images);
         return;
       }
       log.push({ role: 'assistant', text: reply });
@@ -517,7 +834,7 @@
           message = 'Could not reach the workflow. Check your connection, and that the webhook is active.';
         }
       }
-      addError(message, text);
+      addError(message, text, images);
     });
   }
 
@@ -534,10 +851,13 @@
 
   function submit() {
     var text = input.value.trim();
-    if (!text || busy) return;
+    if ((!text && !pendingAttachments.length) || busy) return;
+    var images = pendingAttachments;
+    pendingAttachments = [];
+    renderAttachments();
     input.value = '';
     autoGrow();
-    send(text, false);
+    send(text, images, false);
   }
 
   form.addEventListener('submit', function (e) {
@@ -556,7 +876,7 @@
   });
 
   resetBtn.addEventListener('click', function () {
-    if (log.length && !confirm('Start a new conversation? This clears the current one.')) return;
+    if ((log.length || pendingAttachments.length) && !confirm('Start a new conversation? This clears the current one.')) return;
     log = [];
     del(LOG_KEY);
     sessionId = makeId();
@@ -564,6 +884,8 @@
     showSession();
     while (list.firstChild) list.removeChild(list.firstChild);
     list.appendChild(empty);
+    pendingAttachments = [];
+    renderAttachments();
     input.focus();
   });
 

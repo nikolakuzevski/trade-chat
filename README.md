@@ -35,6 +35,20 @@ any host.
   `apple-touch-icon` and the `apple-mobile-web-app-*` meta tags rather than the
   manifest, so it opens full-screen without Safari's chrome.
 
+## Attaching images
+
+Tap the paperclip to pick images from the device, or paste one straight into
+the message field — a screenshot copied with Win+Shift+S, cmd+ctrl+shift+4, or
+a browser's "Copy image" all arrive as a pasted file, no separate control
+needed. On desktop you can also drag an image file onto the page. Up to 6
+images per message, 25 MB each before processing.
+
+Every attached image is downscaled and re-encoded to JPEG client-side (long
+edge capped at 1440px, quality 0.82) before it's shown, stored, or sent — a
+raw phone photo can be 10+ MB, which is both slow to upload and enough on its
+own to blow past localStorage's quota after a few messages. Tap any image in
+the transcript to view it full-size.
+
 ## The request
 
 ```
@@ -43,6 +57,18 @@ Content-Type: application/json
 
 { "message": "...", "sessionId": "..." }
 ```
+
+When the message has images attached, the body also carries:
+
+```json
+{ "images": [ { "name": "screenshot.png", "type": "image/jpeg", "data": "<base64, no data: prefix>" } ] }
+```
+
+The `images` key is only present when at least one image was attached — a
+plain text message's body is unchanged. Your n8n workflow needs a branch that
+reads this field (e.g. a Code node that converts each entry's `data` back to
+binary with `Buffer.from(item.data, 'base64')`) if you want it to actually see
+the pictures rather than just the text.
 
 The expected answer is `{ "reply": "...", "sessionId": "..." }`. If the
 workflow's Respond node is left on its default settings n8n often returns the
@@ -68,6 +94,12 @@ Both keys live in `localStorage`, per browser:
 
 A blocked `localStorage` (private mode, site data turned off) is caught rather
 than thrown, so the app still runs, just without memory between loads.
+
+Images in the transcript push `dtchat.log` a lot closer to localStorage's
+quota (usually 5-10 MB per origin) than plain text ever did. If saving the
+full log fails, the oldest messages are dropped one at a time until what's
+left fits, rather than losing the whole transcript or silently saving
+nothing — so a long, image-heavy history may not survive a reload in full.
 
 ## Behaviour worth knowing
 
