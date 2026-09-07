@@ -165,6 +165,11 @@
     cursor: pointer;
   }
 
+  .row.pending .bubble {
+    font-style: italic;
+    opacity: 0.85;
+  }
+
   .typing .bubble {
     display: flex;
     gap: 4px;
@@ -409,6 +414,7 @@
   var busy = false;
   var typingRow = null;
   var pendingAttachments = []; // [{ id, name, mimeType, dataUrl }], images picked or pasted but not sent yet
+  var pendingJobs = {}; // jobId -> { row, entry }, for a "processing" ack whose real result isn't in yet
 
   /* ---------- storage (a blocked localStorage must not break the app) ---------- */
 
@@ -498,10 +504,10 @@
     if (e.key === 'Escape' && !lightbox.hidden) closeLightbox();
   });
 
-  function addBubble(role, text, images) {
+  function addBubble(role, text, images, pending) {
     dropEmpty();
     var row = document.createElement('div');
-    row.className = 'row ' + (role === 'user' ? 'me' : 'them');
+    row.className = 'row ' + (role === 'user' ? 'me' : 'them') + (pending ? ' pending' : '');
     var bubble = document.createElement('div');
     bubble.className = 'bubble';
     if (images && images.length) {
@@ -573,7 +579,7 @@
     typingRow = null;
   }
 
-  for (var i = 0; i < log.length; i++) addBubble(log[i].role, log[i].text, log[i].images);
+  for (var i = 0; i < log.length; i++) addBubble(log[i].role, log[i].text, log[i].images, log[i].status === 'processing');
   scrollToEnd();
 
   /* ---------- attachments (file picker, paste, drag-and-drop) ---------- */
@@ -743,6 +749,25 @@
     return null;
   }
 
+  // A "processing" response is an immediate ack for a job the workflow keeps
+  // working on in the background ({ jobId, status: "processing", reply }) -
+  // distinct from a final { reply, sessionId } answer.
+  function pickJobId(data) {
+    if (!data || typeof data !== 'object') return null;
+    if (Array.isArray(data)) return data.length ? pickJobId(data[0]) : null;
+    if (typeof data.jobId === 'string' && data.jobId) return data.jobId;
+    if (data.json) return pickJobId(data.json);
+    return null;
+  }
+
+  function pickStatus(data) {
+    if (!data || typeof data !== 'object') return null;
+    if (Array.isArray(data)) return data.length ? pickStatus(data[0]) : null;
+    if (typeof data.status === 'string' && data.status) return data.status;
+    if (data.json) return pickStatus(data.json);
+    return null;
+  }
+
   function setBusy(state) {
     busy = state;
     sendBtn.disabled = state;
@@ -808,6 +833,22 @@
         sessionId = returned;
         set(SESSION_KEY, sessionId);
         showSession();
+      }
+
+      var jobId = pickJobId(data);
+      if (jobId && pickStatus(data) === 'processing') {
+        // The workflow answered right away but is still working in the
+        // background. Show its status text now, shown in italics to mark it
+        // as provisional, and hang on to the jobId - nothing here polls for
+        // the real result yet, but the row and log entry are addressable by
+        // jobId for whatever does that next.
+        var statusText = pickReply(data) || 'Working on it…';
+        var entry = { role: 'assistant', text: statusText, jobId: jobId, status: 'processing' };
+        log.push(entry);
+        saveLog();
+        var row = addBubble('assistant', statusText, null, true);
+        pendingJobs[jobId] = { row: row, entry: entry };
+        return;
       }
 
       var reply = pickReply(data);
@@ -886,6 +927,7 @@
     list.appendChild(empty);
     pendingAttachments = [];
     renderAttachments();
+    pendingJobs = {};
     input.focus();
   });
 

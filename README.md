@@ -77,6 +77,25 @@ page reads the first item and accepts `reply`, `output`, `text`, `message`,
 `answer` or `response`. When the answer carries a `sessionId`, that value
 replaces the stored one.
 
+### Immediate ack for a background job
+
+If the workflow does slow work (like actually logging a trade) after
+responding, it can answer right away with a status ack instead of the final
+text:
+
+```json
+{ "jobId": "...", "status": "processing", "reply": "🔄 Logging your trade…" }
+```
+
+The page shows that `reply` immediately as its own message, styled in italics
+to mark it as provisional, and keeps `jobId` on both the DOM row and the
+matching entry in the persisted transcript (`{ role, text, jobId, status:
+"processing" }`). There's no polling yet — nothing currently goes back and
+updates that message once the job actually finishes — so treat this as a
+status line the user sees right away, not a final answer. A workflow that
+never sends this shape can ignore all of this and just answer with `reply`
+directly, as before.
+
 The CORS headers have to come from n8n. If replies never arrive but the n8n
 execution log shows the run succeeding, add
 `Access-Control-Allow-Origin: <your page's origin>` to the Respond to Webhook
