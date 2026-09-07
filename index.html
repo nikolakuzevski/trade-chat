@@ -193,6 +193,28 @@
     .typing i { animation: none; opacity: 0.5; }
   }
 
+  /* Inline "still working" indicator appended to a pending status bubble
+     while its job is being polled - same dots as .typing, smaller and
+     inline so they trail right after the status text. */
+  .dots {
+    display: inline-flex;
+    gap: 3px;
+    margin-left: 6px;
+    vertical-align: middle;
+  }
+  .dots i {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: blink 1.2s infinite ease-in-out;
+  }
+  .dots i:nth-child(2) { animation-delay: 0.18s; }
+  .dots i:nth-child(3) { animation-delay: 0.36s; }
+  @media (prefers-reduced-motion: reduce) {
+    .dots i { animation: none; opacity: 0.5; }
+  }
+
   #empty {
     margin: auto;
     text-align: center;
@@ -389,6 +411,9 @@
   'use strict';
 
   var ENDPOINT = 'https://nikolakuze.app.n8n.cloud/webhook/dtjournal-chat';
+  var RESULT_ENDPOINT = 'https://nikolakuze.app.n8n.cloud/webhook/dtjournal-result';
+  var POLL_INTERVAL_MS = 3000;
+  var POLL_TIMEOUT_MS = 3 * 60 * 1000; // give up waiting for a background job after ~3 minutes
   var SESSION_KEY = 'dtchat.sessionId';
   var LOG_KEY = 'dtchat.log';
   var TIMEOUT_MS = 90000;
@@ -414,7 +439,7 @@
   var busy = false;
   var typingRow = null;
   var pendingAttachments = []; // [{ id, name, mimeType, dataUrl }], images picked or pasted but not sent yet
-  var pendingJobs = {}; // jobId -> { row, entry }, for a "processing" ack whose real result isn't in yet
+  var pendingJobs = {}; // jobId -> { row, entry, timer }, for a job still being polled for its real result
 
   /* ---------- storage (a blocked localStorage must not break the app) ---------- */
 
@@ -534,6 +559,21 @@
     return row;
   }
 
+  // Trailing "still working" dots appended into a pending bubble's text
+  // while its job is being polled. Plain textContent assignment (used to
+  // swap in the final reply or an error later) wipes this along with the
+  // status text, so nothing has to remove it explicitly.
+  function addSpinner(row) {
+    var bubble = row.querySelector('.bubble');
+    var target = bubble.lastElementChild || bubble;
+    var dots = document.createElement('span');
+    dots.className = 'dots';
+    dots.appendChild(document.createElement('i'));
+    dots.appendChild(document.createElement('i'));
+    dots.appendChild(document.createElement('i'));
+    target.appendChild(dots);
+  }
+
   function addError(message, retryText, retryImages) {
     dropEmpty();
     var row = document.createElement('div');
@@ -579,7 +619,21 @@
     typingRow = null;
   }
 
-  for (var i = 0; i < log.length; i++) addBubble(log[i].role, log[i].text, log[i].images, log[i].status === 'processing');
+  for (var i = 0; i < log.length; i++) {
+    var restored = log[i];
+    var restoredRow = addBubble(restored.role, restored.text, restored.images, restored.status === 'processing');
+    // A reload mid-job (backgrounding the phone, say) would otherwise leave
+    // this bubble saying "processing" forever with no polling behind it -
+    // pick back up where it left off instead. Its original ~3 minute budget
+    // isn't tracked across reloads, so this restarts the clock; if the job
+    // already finished server-side, the very first poll below will just say
+    // so right away.
+    if (restored.status === 'processing' && restored.jobId) {
+      addSpinner(restoredRow);
+      pendingJobs[restored.jobId] = { row: restoredRow, entry: restored };
+      startPolling(restored.jobId);
+    }
+  }
   scrollToEnd();
 
   /* ---------- attachments (file picker, paste, drag-and-drop) ---------- */
@@ -838,16 +892,16 @@
       var jobId = pickJobId(data);
       if (jobId && pickStatus(data) === 'processing') {
         // The workflow answered right away but is still working in the
-        // background. Show its status text now, shown in italics to mark it
-        // as provisional, and hang on to the jobId - nothing here polls for
-        // the real result yet, but the row and log entry are addressable by
-        // jobId for whatever does that next.
+        // background. Show its status text now, styled in italics to mark
+        // it as provisional, then start polling for the real result.
         var statusText = pickReply(data) || 'Working on it…';
         var entry = { role: 'assistant', text: statusText, jobId: jobId, status: 'processing' };
         log.push(entry);
         saveLog();
         var row = addBubble('assistant', statusText, null, true);
+        addSpinner(row);
         pendingJobs[jobId] = { row: row, entry: entry };
+        startPolling(jobId);
         return;
       }
 
@@ -877,6 +931,85 @@
       }
       addError(message, text, images);
     });
+  }
+
+  // Turns a still-pending status bubble into its final state: the real
+  // reply on success, or an in-place error if the job errored out or was
+  // never heard from again. A no-op if the job was already cleared (e.g.
+  // "New chat" ran while a poll was in flight).
+  function finishJob(jobId, reply, err) {
+    var job = pendingJobs[jobId];
+    delete pendingJobs[jobId];
+    if (!job) return;
+
+    var bubble = job.row.querySelector('.bubble');
+    if (err) {
+      job.row.className = 'row them error';
+      bubble.textContent = err.message;
+      job.entry.text = err.message;
+      job.entry.status = 'error';
+    } else {
+      job.row.className = 'row them';
+      bubble.textContent = reply;
+      job.entry.text = reply;
+      job.entry.status = 'done';
+    }
+    delete job.entry.jobId;
+    saveLog();
+    scrollToEnd();
+  }
+
+  // Polls RESULT_ENDPOINT with { jobId } every POLL_INTERVAL_MS until it
+  // reports { status: "done", reply }, reports some other status (treated
+  // as failure), or POLL_TIMEOUT_MS is up. A transient network error while
+  // polling is retried rather than failing the job outright - it's the
+  // overall timeout's job to eventually give up, not one bad request.
+  function startPolling(jobId) {
+    var deadline = Date.now() + POLL_TIMEOUT_MS;
+
+    function tick() {
+      var job = pendingJobs[jobId];
+      if (!job) return; // cancelled - e.g. "New chat" - stop quietly
+
+      if (Date.now() > deadline) {
+        finishJob(jobId, null, new Error('Gave up waiting for a result after 3 minutes.'));
+        return;
+      }
+
+      fetch(RESULT_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId: jobId })
+      }).then(function (res) {
+        return res.text().then(function (body) {
+          if (!res.ok) {
+            throw new Error('The status check returned ' + res.status + (body ? ': ' + body.slice(0, 200) : '') + '.');
+          }
+          try {
+            return body ? JSON.parse(body) : null;
+          } catch (e) {
+            return body;
+          }
+        });
+      }).then(function (data) {
+        var job2 = pendingJobs[jobId];
+        if (!job2) return; // cancelled while this check was in flight
+
+        var status = pickStatus(data);
+        if (status === 'done') {
+          finishJob(jobId, pickReply(data) || 'Done.', null);
+        } else if (status && status !== 'processing') {
+          finishJob(jobId, null, new Error(pickReply(data) || ('The job reported status "' + status + '".')));
+        } else {
+          job2.timer = setTimeout(tick, POLL_INTERVAL_MS);
+        }
+      }).catch(function () {
+        var job3 = pendingJobs[jobId];
+        if (job3) job3.timer = setTimeout(tick, POLL_INTERVAL_MS);
+      });
+    }
+
+    pendingJobs[jobId].timer = setTimeout(tick, POLL_INTERVAL_MS);
   }
 
   /* ---------- composer ---------- */
@@ -927,6 +1060,7 @@
     list.appendChild(empty);
     pendingAttachments = [];
     renderAttachments();
+    Object.keys(pendingJobs).forEach(function (jobId) { clearTimeout(pendingJobs[jobId].timer); });
     pendingJobs = {};
     input.focus();
   });

@@ -88,13 +88,36 @@ text:
 ```
 
 The page shows that `reply` immediately as its own message, styled in italics
-to mark it as provisional, and keeps `jobId` on both the DOM row and the
-matching entry in the persisted transcript (`{ role, text, jobId, status:
-"processing" }`). There's no polling yet — nothing currently goes back and
-updates that message once the job actually finishes — so treat this as a
-status line the user sees right away, not a final answer. A workflow that
+with a small trailing "still working" indicator to mark it as provisional,
+and keeps `jobId` on both the DOM row and the matching entry in the persisted
+transcript (`{ role, text, jobId, status: "processing" }`). A workflow that
 never sends this shape can ignore all of this and just answer with `reply`
 directly, as before.
+
+### Polling for the real result
+
+Once a `jobId` comes back, the page polls for the actual outcome:
+
+```
+POST https://nikolakuze.app.n8n.cloud/webhook/dtjournal-result
+Content-Type: application/json
+
+{ "jobId": "..." }
+```
+
+every 3 seconds, until the answer is `{ "status": "done", "reply": "..." }` —
+at which point the status bubble is replaced in place with that `reply` — or
+until 3 minutes pass with no `"done"`, at which point the same bubble turns
+into an error ("Gave up waiting for a result after 3 minutes."). Any other
+`status` value (e.g. `"failed"`) is treated the same way as a timeout: the
+bubble becomes an error, using `reply` as the error text if the workflow sent
+one. A network hiccup on a single poll doesn't fail the job — it's silently
+retried on the next 3-second tick, within the same 3-minute budget.
+
+Reloading the page (or the OS backgrounding and reloading the tab) while a
+job is still processing picks the polling back up automatically for any
+message still marked `"processing"` in the persisted transcript — but the
+3-minute budget restarts from the reload, it isn't carried over from before.
 
 The CORS headers have to come from n8n. If replies never arrive but the n8n
 execution log shows the run succeeding, add
